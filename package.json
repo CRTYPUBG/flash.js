@@ -1,0 +1,47 @@
+{
+  "name": "flash.js",
+  "version": "1.0.0",
+  "description": "jQuery, reimagined for the modern web. Zero-dependency, tree-shakable DOM & Web API library.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./flash.d.ts",
+  "unpkg": "./dist/flash.min.js",
+  "jsdelivr": "./dist/flash.min.js",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./flash.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./dom": { "import": "./dist/dom.js" },
+    "./http": { "import": "./dist/http.js" },
+    "./events": { "import": "./dist/events.js" },
+    "./animation": { "import": "./dist/animation.js" },
+    "./storage": { "import": "./dist/storage.js" },
+    "./ui": { "import": "./dist/ui.js" },
+    "./observers": { "import": "./dist/observers.js" },
+    "./utils": { "import": "./dist/utils.js" }
+  },
+  "files": ["dist", "src", "flash.js", "flash.d.ts", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "test": "vitest run",
+    "lint": "eslint src --ext .js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": ["dom", "jquery", "vanilla", "tree-shakable", "esm", "web-api", "flash", "ui", "toast", "fetch"],
+  "author": "CRTY DEV",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CRTYPUBG/flash.js"
+  },
+  "devDependencies": {
+    "@rollup/plugin-terser": "^0.4.4",
+    "rollup": "^4.22.0",
+    "vitest": "^1.6.0"
+  }
+}

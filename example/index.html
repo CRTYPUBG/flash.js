@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FLASH.js — Demo</title>
+  <style>
+    *{box-sizing:border-box} body{font:14px/1.5 system-ui,sans-serif;max-width:860px;margin:2rem auto;padding:0 1rem}
+    .card{border:1px solid #ddd;border-radius:.75rem;padding:1rem;margin:1rem 0}
+    .btn{border:0;border-radius:.5rem;padding:.6rem 1rem;background:#111;color:#fff;cursor:pointer;margin:.25rem}
+    .btn.ghost{background:#eee;color:#111}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+    @media(max-width:600px){.grid{grid-template-columns:1fr}}
+    code{background:#f5f5f5;padding:.2em .4em;border-radius:.3em}
+  </style>
+</head>
+<body>
+  <h1>FLASH.js <small style="font-weight:400;color:#666">— jQuery, reimagined for the modern web.</small></h1>
+  <p><code>npm install flash.js</code> · <code>&lt;script src="flash.js"&gt;&lt;/script&gt;</code> · Zero deps · Tree-shakable</p>
+
+  <div class="card">
+    <h3>DOM + Events</h3>
+    <div id="demo-box" class="card" style="background:#fafafa">Ben bir kutuyum — <code>F("#demo-box")</code></div>
+    <button class="btn" id="btn-add">addClass</button>
+    <button class="btn ghost" id="btn-toggle">toggle</button>
+    <button class="btn ghost" id="btn-find">find / traversal</button>
+  </div>
+
+  <div class="card">
+    <h3>UI — Toast / Alert / Confirm / Loading</h3>
+    <button class="btn" id="btn-toast">toast (info)</button>
+    <button class="btn" style="background:#0a7a3b" id="btn-toast-success">toast success</button>
+    <button class="btn" style="background:#b00020" id="btn-toast-error">toast error</button>
+    <button class="btn ghost" id="btn-alert">alert</button>
+    <button class="btn ghost" id="btn-confirm">confirm</button>
+    <button class="btn ghost" id="btn-loading">loading 1.2s</button>
+  </div>
+
+  <div class="card">
+    <h3>HTTP + Storage + Utilities</h3>
+    <div class="grid">
+      <div>
+        <button class="btn ghost" id="btn-http">F.http.json()</button>
+        <pre id="http-out" style="background:#111;color:#0f0;padding:.75rem;border-radius:.5rem;overflow:auto;min-height:3rem">—</pre>
+      </div>
+      <div>
+        <button class="btn ghost" id="btn-storage">storage + theme</button>
+        <button class="btn ghost" id="btn-copy">copy</button>
+        <button class="btn ghost" id="btn-download">download</button>
+        <pre id="storage-out" style="background:#f5f5f5;padding:.75rem;border-radius:.5rem;min-height:3rem">—</pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Animation + Observers</h3>
+    <div id="anim-box" style="width:80px;height:80px;background:#111;border-radius:.75rem"></div>
+    <button class="btn ghost" id="btn-animate">animate</button>
+    <button class="btn ghost" id="btn-fade">fadeIn / fadeOut</button>
+    <p id="visible-target" style="margin-top:2rem;padding:.5rem;background:#eef;border-radius:.5rem">Aşağı kaydır — <code>visible()</code> tetiklenecek</p>
+  </div>
+
+  <!-- UMD denemesi: root flash.js -->
+  <script src="../flash.js"></script>
+  <script>
+    // F ve Flash global olarak gelir (UMD)
+    F.ready(() => {
+      console.log("FLASH.js", F.version);
+
+      // DOM
+      F("#btn-add").on("click", () => {
+        F("#demo-box").addClass("active").css({ borderColor: "#0a7a3b", background: "#e6f5ec" });
+        F.toast("active eklendi", "success");
+      });
+      F("#btn-toggle").on("click", () => F("#demo-box").toggle());
+      F("#btn-find").on("click", () => {
+        const count = F("button").length;
+        F.toast(`Sayfada ${count} buton var`, "info");
+        console.log("parents:", F("#demo-box").parents().get());
+      });
+
+      // delegation örneği
+      F(document).on("click", ".btn", (e, target) => {
+        // console.log("delegated click", target.id);
+      });
+
+      // UI
+      F("#btn-toast").on("click", () => F.toast("Kaydedildi!"));
+      F("#btn-toast-success").on("click", () => F.toast("Başarılı!", "success"));
+      F("#btn-toast-error").on("click", () => F.toast("Bir hata oluştu", "error"));
+      F("#btn-alert").on("click", async () => { await F.alert("Bu bir alert modalıdır.", "Bildirim"); });
+      F("#btn-confirm").on("click", async () => {
+        const ok = await F.confirm("Silmek istediğine emin misin?", "Onay");
+        F.toast(ok ? "Onaylandı" : "İptal edildi", ok ? "success" : "warn");
+      });
+      F("#btn-loading").on("click", async () => {
+        F.loading(true);
+        await new Promise(r => setTimeout(r, 1200));
+        F.loading(false);
+        F.toast("Yüklendi", "success");
+      });
+
+      // HTTP
+      F("#btn-http").on("click", async () => {
+        const out = F("#http-out");
+        out.text("yükleniyor...");
+        try {
+          const data = await F.http.json("https://jsonplaceholder.typicode.com/todos/1");
+          out.text(JSON.stringify(data, null, 2));
+        } catch (e) {
+          out.text("hata: " + e.message);
+        }
+      });
+
+      // Storage + theme + copy/download
+      F("#btn-storage").on("click", () => {
+        F.storage.set("demo", { time: Date.now(), theme: F.theme() });
+        const v = F.storage.get("demo");
+        F("#storage-out").text(JSON.stringify(v, null, 2));
+        F.theme(F.theme() === "dark" ? "light" : "dark");
+        F.toast("theme: " + F.theme(), "info");
+      });
+      F("#btn-copy").on("click", async () => {
+        await F.copy("CRTY DEV — FLASH.js");
+        F.toast("Panoya kopyalandı", "success");
+      });
+      F("#btn-download").on("click", () => F.download("flash-demo.txt", "FLASH.js — hello world\n" + new Date().toISOString()));
+
+      // Animation
+      F("#btn-animate").on("click", async () => {
+        await F("#anim-box").animate(
+          { transform: ["translateX(0)", "translateX(160px)"] },
+          { duration: 400, easing: "ease-in-out" }
+        );
+        await F("#anim-box").animate(
+          { transform: ["translateX(160px)", "translateX(0)"] },
+          { duration: 400 }
+        );
+      });
+      let faded = false;
+      F("#btn-fade").on("click", async () => {
+        faded ? await F("#anim-box").fadeIn() : await F("#anim-box").fadeOut();
+        faded = !faded;
+      });
+
+      // Observers
+      F("#visible-target").visible((isVisible) => {
+        if (isVisible) console.log("visible-target görünür");
+      });
+      F("#demo-box").observe(() => console.log("demo-box mutasyon"));
+      F("#demo-box").resize(rect => console.log("resize", rect.width));
+    });
+
+    // ESM kullanımı (vite/rollup):
+    // import { F } from "flash.js";
+    // import { http } from "flash.js/http";
+    // import { toast } from "flash.js/ui";
+  </script>
+</body>
+</html>
