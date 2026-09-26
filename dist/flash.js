@@ -1,42 +1,15 @@
-/*!
- * FLASH.js v1.0.0
- * jQuery, reimagined for the modern web.
- * Fast Lightweight UI / HTML System — zero dependencies, ESM-first, tree-shakable
- * MIT License · https://github.com/CRTYPUBG/flash.js
- */
 (function (global, factory) {
-  if (typeof module === "object" && typeof module.exports === "object") {
-    module.exports = factory();
-  } else if (typeof define === "function" && define.amd) {
-    define(factory);
-  } else {
-    global.Flash = factory();
-    global.F = global.Flash;
-  }
-})(typeof window !== "undefined" ? window : globalThis, function () {
-  "use strict";
+  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+  typeof define === 'function' && define.amd ? define(['exports'], factory) :
+  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.Flash = {}));
+})(this, (function (exports) { 'use strict';
 
-  const VERSION = "1.0.0";
-
-  /* ----------------------------- Utils ----------------------------- */
   const isElement    = (v) => typeof Element !== "undefined" && v instanceof Element;
-  const isCollection = (v) => v instanceof Collection;
   const isString     = (v) => typeof v === "string";
   const isFunction   = (v) => typeof v === "function";
   const isObject     = (v) => v !== null && typeof v === "object";
 
   const unique = (arr) => [...new Set(arr)];
-
-  function toArray(value) {
-    if (value == null) return [];
-    if (Array.isArray(value)) return value;
-    if (value instanceof NodeList || value instanceof HTMLCollection) return [...value];
-    if (value instanceof Collection) return value.elements;
-    if (typeof Element !== "undefined" && isElement(value)) return [value];
-    if (typeof Document !== "undefined" && value instanceof Document) return [value];
-    if (typeof Window !== "undefined" && value instanceof Window) return [value];
-    return [];
-  }
 
   function parseData(raw) {
     try { return JSON.parse(raw); } catch { return raw; }
@@ -48,7 +21,18 @@
     return tpl.content.firstElementChild || tpl.content;
   }
 
-  /* --------------------------- Collection -------------------------- */
+  function toArray(value) {
+    if (value == null) return [];
+    if (Array.isArray(value)) return value;
+    if (value instanceof NodeList || value instanceof HTMLCollection) return [...value];
+    // Collection check via duck typing to avoid circular import
+    if (value && typeof value === "object" && "elements" in value && Array.isArray(value.elements)) return value.elements;
+    if (typeof Element !== "undefined" && value instanceof Element) return [value];
+    if (typeof Document !== "undefined" && value instanceof Document) return [value];
+    if (typeof Window !== "undefined" && value instanceof Window) return [value];
+    return [];
+  }
+
   class Collection {
     constructor(elements) {
       this.elements = elements;
@@ -89,9 +73,7 @@
     /* Attributes */
     attr(name, value) {
       if (isObject(name) && !Array.isArray(name)) {
-        return this.each((_, el) =>
-          Object.entries(name).forEach(([k, v]) => el.setAttribute(k, v))
-        );
+        return this.each((_, el) => Object.entries(name).forEach(([k, v]) => el.setAttribute(k, v)));
       }
       if (value === undefined) return this.elements[0]?.getAttribute(name) ?? null;
       if (value === null) return this.removeAttr(name);
@@ -105,11 +87,9 @@
       if (value === undefined) return this.elements[0]?.[name];
       return this.each((_, el) => { el[name] = value; });
     }
-    removeProp(name) {
-      return this.each((_, el) => { try { delete el[name]; } catch {} });
-    }
+    removeProp(name) { return this.each((_, el) => { try { delete el[name]; } catch {} }); }
 
-    /* Data — dataset + JSON auto parse */
+    /* Data */
     data(key, value) {
       if (value === undefined && isString(key)) {
         const el = this.elements[0];
@@ -118,22 +98,14 @@
         return raw === undefined ? undefined : parseData(raw);
       }
       if (isObject(key) && !Array.isArray(key)) {
-        return this.each((_, el) =>
-          Object.entries(key).forEach(([k, v]) => {
-            el.dataset[k] = isString(v) ? v : JSON.stringify(v);
-          })
-        );
+        return this.each((_, el) => Object.entries(key).forEach(([k, v]) => { el.dataset[k] = isString(v) ? v : JSON.stringify(v); }));
       }
       if (isString(key) && value !== undefined) {
-        return this.each((_, el) => {
-          el.dataset[key] = isString(value) ? value : JSON.stringify(value);
-        });
+        return this.each((_, el) => { el.dataset[key] = isString(value) ? value : JSON.stringify(value); });
       }
       return this;
     }
-    removeData(key) {
-      return this.each((_, el) => { delete el.dataset[key]; });
-    }
+    removeData(key) { return this.each((_, el) => { delete el.dataset[key]; }); }
 
     /* CSS */
     css(prop, value) {
@@ -150,9 +122,12 @@
     html(value) {
       if (value === undefined) return this.elements[0]?.innerHTML ?? "";
       return this.each((_, el) => {
-        if (value instanceof Collection || isElement(value)) {
+        if (value && typeof value === "object" && "elements" in value) {
           el.innerHTML = "";
           toArray(value).forEach((node) => el.appendChild(node.cloneNode(true)));
+        } else if (isElement(value)) {
+          el.innerHTML = "";
+          el.appendChild(value.cloneNode(true));
         } else {
           el.innerHTML = value;
         }
@@ -179,38 +154,28 @@
     /* Manipulation */
     append(content) {
       const nodes = toArray(content);
-      return this.each((_, el) =>
-        nodes.forEach((n) =>
-          el.appendChild(isString(n) ? createFragment(n) : n.cloneNode(true))
-        )
-      );
+      return this.each((_, el) => nodes.forEach((n) => el.appendChild(isString(n) ? createFragment(n) : n.cloneNode(true))));
     }
     prepend(content) {
       const nodes = toArray(content);
-      return this.each((_, el) =>
-        nodes.forEach((n) => {
-          const node = isString(n) ? createFragment(n) : n.cloneNode(true);
-          el.insertBefore(node, el.firstChild);
-        })
-      );
+      return this.each((_, el) => nodes.forEach((n) => {
+        const node = isString(n) ? createFragment(n) : n.cloneNode(true);
+        el.insertBefore(node, el.firstChild);
+      }));
     }
     before(content) {
       const nodes = toArray(content);
-      return this.each((_, el) =>
-        nodes.forEach((n) => {
-          const node = isString(n) ? createFragment(n) : n.cloneNode(true);
-          el.parentNode?.insertBefore(node, el);
-        })
-      );
+      return this.each((_, el) => nodes.forEach((n) => {
+        const node = isString(n) ? createFragment(n) : n.cloneNode(true);
+        el.parentNode?.insertBefore(node, el);
+      }));
     }
     after(content) {
       const nodes = toArray(content);
-      return this.each((_, el) =>
-        nodes.forEach((n) => {
-          const node = isString(n) ? createFragment(n) : n.cloneNode(true);
-          el.parentNode?.insertBefore(node, el.nextSibling);
-        })
-      );
+      return this.each((_, el) => nodes.forEach((n) => {
+        const node = isString(n) ? createFragment(n) : n.cloneNode(true);
+        el.parentNode?.insertBefore(node, el.nextSibling);
+      }));
     }
     remove() { return this.each((_, el) => el.remove()); }
     empty()  { return this.each((_, el) => { el.innerHTML = ""; }); }
@@ -222,17 +187,12 @@
       this.each((_, el) => results.push(...el.querySelectorAll(selector)));
       return new Collection(unique(results));
     }
-    parent() {
-      return new Collection(unique(this.elements.map((el) => el.parentElement).filter(Boolean)));
-    }
+    parent() { return new Collection(unique(this.elements.map((el) => el.parentElement).filter(Boolean))); }
     parents(selector) {
       const results = [];
       this.each((_, el) => {
         let p = el.parentElement;
-        while (p) {
-          if (!selector || p.matches(selector)) results.push(p);
-          p = p.parentElement;
-        }
+        while (p) { if (!selector || p.matches(selector)) results.push(p); p = p.parentElement; }
       });
       return new Collection(unique(results));
     }
@@ -243,10 +203,7 @@
     }
     closest(selector) {
       const results = [];
-      this.each((_, el) => {
-        const c = el.closest(selector);
-        if (c) results.push(c);
-      });
+      this.each((_, el) => { const c = el.closest(selector); if (c) results.push(c); });
       return new Collection(unique(results));
     }
     siblings(selector) {
@@ -275,16 +232,11 @@
       });
       return new Collection(results);
     }
-    is(selector) {
-      return this.elements.some((el) => el.matches(selector));
-    }
+    is(selector) { return this.elements.some((el) => el.matches(selector)); }
     index(selector) {
       const el = this.elements[0];
       if (!el) return -1;
-      if (selector) {
-        const list = [...document.querySelectorAll(selector)];
-        return list.indexOf(el);
-      }
+      if (selector) return [...document.querySelectorAll(selector)].indexOf(el);
       if (!el.parentElement) return -1;
       return [...el.parentElement.children].indexOf(el);
     }
@@ -293,23 +245,13 @@
     on(events, selectorOrHandler, handlerOrOptions, options) {
       const eventList = events.split(/\s+/).filter(Boolean);
       let selector = null, handler, opts = {};
-
       if (isString(selectorOrHandler)) {
-        selector = selectorOrHandler;
-        handler = handlerOrOptions;
-        opts = options || {};
-      } else {
-        handler = selectorOrHandler;
-        opts = handlerOrOptions || {};
-      }
-
+        selector = selectorOrHandler; handler = handlerOrOptions; opts = options || {};
+      } else { handler = selectorOrHandler; opts = handlerOrOptions || {}; }
       return this.each((_, el) => {
         eventList.forEach((evt) => {
           const wrapped = selector
-            ? (e) => {
-                const target = e.target.closest(selector);
-                if (target && el.contains(target)) handler.call(target, e, target);
-              }
+            ? (e) => { const target = e.target.closest(selector); if (target && el.contains(target)) handler.call(target, e, target); }
             : handler;
           if (!el.__flashHandlers) el.__flashHandlers = [];
           el.__flashHandlers.push({ evt, handler, wrapped, selector, opts });
@@ -334,55 +276,34 @@
       const eventList = events.split(/\s+/).filter(Boolean);
       return this.each((_, el) => {
         eventList.forEach((evt) => {
-          const wrap = (e) => {
-            handler.call(el, e);
-            el.removeEventListener(evt, wrap);
-          };
+          const wrap = (e) => { handler.call(el, e); el.removeEventListener(evt, wrap); };
           el.addEventListener(evt, wrap, { once: true });
         });
       });
     }
     trigger(event, detail) {
-      const e = isString(event)
-        ? new CustomEvent(event, { detail, bubbles: true, cancelable: true })
-        : event;
+      const e = isString(event) ? new CustomEvent(event, { detail, bubbles: true, cancelable: true }) : event;
       return this.each((_, el) => el.dispatchEvent(e));
     }
 
-    /* Effects — Web Animations API with fallback */
+    /* Effects */
     async animate(keyframes, options = {}) {
       const opts = typeof options === "number" ? { duration: options } : options;
-      // normalize keyframes: allow object like {opacity:0} → [{opacity:0}]
       const kf = Array.isArray(keyframes) ? keyframes : [keyframes];
       const animations = this.elements.map((el) => {
-        if (el.animate) {
-          return el.animate(kf, {
-            duration: 300,
-            easing: "ease",
-            fill: "forwards",
-            ...opts,
-          });
-        }
-        // fallback: apply final frame synchronously
+        if (el.animate) return el.animate(kf, { duration: 300, easing: "ease", fill: "forwards", ...opts });
         const last = kf[kf.length - 1] || {};
         Object.assign(el.style, last);
-        return { finished: Promise.resolve(), cancel() {}, play() {} };
+        return { finished: Promise.resolve() };
       });
       await Promise.all(animations.map((a) => a.finished.catch(() => {})));
       return this;
     }
-    async fadeIn(duration = 300) {
-      this.show();
-      return this.animate([{ opacity: 0 }, { opacity: 1 }], { duration });
-    }
-    async fadeOut(duration = 300) {
-      await this.animate([{ opacity: 1 }, { opacity: 0 }], { duration });
-      return this.hide();
-    }
+    async fadeIn(duration = 300)  { this.show(); return this.animate([{ opacity: 0 }, { opacity: 1 }], { duration }); }
+    async fadeOut(duration = 300) { await this.animate([{ opacity: 1 }, { opacity: 0 }], { duration }); return this.hide(); }
     async slideDown(duration = 300) {
       this.show();
-      const el = this.elements[0];
-      if (!el) return this;
+      const el = this.elements[0]; if (!el) return this;
       const h = el.scrollHeight;
       return this.animate([{ height: "0px", overflow: "hidden" }, { height: h + "px", overflow: "hidden" }], { duration });
     }
@@ -394,28 +315,23 @@
     /* Observers */
     observe(callback, options = {}) {
       const observer = new MutationObserver(callback);
-      this.each((_, el) =>
-        observer.observe(el, { childList: true, subtree: true, attributes: true, ...options })
-      );
+      this.each((_, el) => observer.observe(el, { childList: true, subtree: true, attributes: true, ...options }));
       return observer;
     }
     visible(callback, options = {}) {
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => callback(entry.isIntersecting, entry));
-      }, options);
+      const observer = new IntersectionObserver((entries) => entries.forEach((entry) => callback(entry.isIntersecting, entry)), options);
       this.each((_, el) => observer.observe(el));
       return observer;
     }
     resize(callback, options = {}) {
-      const observer = new ResizeObserver((entries) => {
-        entries.forEach((entry) => callback(entry.contentRect, entry));
-      });
+      const observer = new ResizeObserver((entries) => entries.forEach((entry) => callback(entry.contentRect, entry)), options);
       this.each((_, el) => observer.observe(el, options));
       return observer;
     }
   }
 
-  /* ------------------------------- F() ----------------------------- */
+  const VERSION = "1.0.0";
+
   function F(target) {
     if (target instanceof Collection) return target;
     if (isFunction(target)) return F.ready(target);
@@ -427,12 +343,8 @@
         tpl.innerHTML = trimmed;
         return new Collection([...tpl.content.children]);
       }
-      // CSS selector
-      try {
-        return new Collection([...document.querySelectorAll(trimmed)]);
-      } catch {
-        return new Collection([]);
-      }
+      try { return new Collection([...document.querySelectorAll(trimmed)]); }
+      catch { return new Collection([]); }
     }
 
     if (
@@ -449,7 +361,6 @@
   F.version = VERSION;
   F.Collection = Collection;
 
-  /* Ready */
   F.ready = function (callback) {
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", () => callback(F), { once: true });
@@ -459,7 +370,6 @@
     return F;
   };
 
-  /* Utilities */
   F.each = function (obj, fn) {
     if (obj instanceof Collection) return obj.each(fn);
     if (Array.isArray(obj)) obj.forEach((v, i) => fn.call(v, i, v));
@@ -486,7 +396,6 @@
     return false;
   };
 
-  /* ----------------------------- HTTP ------------------------------ */
   const http = {
     async request(url, options = {}) {
       const { body, json, headers, timeout, ...rest } = options;
@@ -501,14 +410,8 @@
         if (!finalHeaders["Content-Type"] && !finalHeaders["content-type"]) finalHeaders["Content-Type"] = "application/json";
       }
 
-      // FormData / URLSearchParams auto headers handled by fetch
       try {
-        const res = await fetch(url, {
-          ...rest,
-          body: payload,
-          headers: finalHeaders,
-          signal: controller.signal,
-        });
+        const res = await fetch(url, { ...rest, body: payload, headers: finalHeaders, signal: controller.signal });
         if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status} ${res.statusText}`), { status: res.status, response: res });
         return res;
       } finally {
@@ -519,33 +422,21 @@
     async text(url, options) { return (await http.request(url, options)).text(); },
     async blob(url, options) { return (await http.request(url, options)).blob(); },
     async arrayBuffer(url, options) { return (await http.request(url, options)).arrayBuffer(); },
-    get(url, options = {})        { return http.request(url, { ...options, method: "GET" }); },
-    post(url, body, options = {}) { 
-      // allow post(url, {json}) sugar
-      if (body && isObject(body) && !(body instanceof FormData) && !(body instanceof Blob) && !(body instanceof URLSearchParams) && !isString(body) && !options.json) {
-        // if options has no method/body confusion, treat as json if no explicit body type
-        // keep backwards compat: post(url, bodyObj) -> body as JSON? Use json option
-      }
-      return http.request(url, { ...options, method: "POST", body }); 
-    },
-    put(url, body, options = {})  { return http.request(url, { ...options, method: "PUT", body }); },
-    patch(url, body, options = {}){ return http.request(url, { ...options, method: "PATCH", body }); },
-    delete(url, options = {})     { return http.request(url, { ...options, method: "DELETE" }); },
+    get(url, options = {})         { return http.request(url, { ...options, method: "GET" }); },
+    post(url, body, options = {})  { return http.request(url, { ...options, method: "POST", body }); },
+    put(url, body, options = {})   { return http.request(url, { ...options, method: "PUT", body }); },
+    patch(url, body, options = {}) { return http.request(url, { ...options, method: "PATCH", body }); },
+    delete(url, options = {})      { return http.request(url, { ...options, method: "DELETE" }); },
   };
 
-  /* --------------------------- Storage ----------------------------- */
   const storage = {
     get(key, fallback = null) {
-      try {
-        const raw = localStorage.getItem(key);
-        return raw === null ? fallback : JSON.parse(raw);
-      } catch { return fallback; }
+      try { const raw = localStorage.getItem(key); return raw === null ? fallback : JSON.parse(raw); } catch { return fallback; }
     },
     set(key, value) { localStorage.setItem(key, JSON.stringify(value)); return value; },
-    remove(key)     { localStorage.removeItem(key); },
-    clear()         { localStorage.clear(); },
-    has(key)        { return localStorage.getItem(key) !== null; },
-    // session variant
+    remove(key) { localStorage.removeItem(key); },
+    clear() { localStorage.clear(); },
+    has(key) { return localStorage.getItem(key) !== null; },
     session: {
       get(k, fb=null) { try{ const r=sessionStorage.getItem(k); return r===null?fb:JSON.parse(r);}catch{return fb;}},
       set(k,v){ sessionStorage.setItem(k, JSON.stringify(v)); return v; },
@@ -555,92 +446,47 @@
     }
   };
 
-  /* --------------------------- Utilities --------------------------- */
-  async function copy(text) {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-    } else {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      ta.style.position = "fixed";
-      ta.style.opacity = "0";
-      document.body.appendChild(ta);
-      ta.select();
-      try { document.execCommand("copy"); } catch {}
-      ta.remove();
-    }
-    return true;
-  }
-
-  function download(filename, data, mime = "text/plain") {
-    const blob = data instanceof Blob ? data : new Blob([data], { type: mime });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
-
-  function theme(mode) {
-    if (!mode) return document.documentElement.dataset.theme || localStorage.getItem("flash:theme") || "light";
-    document.documentElement.dataset.theme = mode;
-    try { localStorage.setItem("flash:theme", JSON.stringify(mode)); } catch {}
-    // dispatch event for listeners
-    document.dispatchEvent(new CustomEvent("flash:theme", { detail: mode }));
-    return mode;
-  }
-  // auto-restore theme
-  try {
-    const saved = JSON.parse(localStorage.getItem("flash:theme") || "null");
-    if (saved) document.documentElement.dataset.theme = saved;
-  } catch {}
-
-  /* ------------------------------- UI ------------------------------ */
   const STYLE_ID = "flash-styles";
+
   function injectStyles() {
     if (document.getElementById(STYLE_ID)) return;
     const style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = `
-      .flash-toast-container{position:fixed;top:1rem;right:1rem;z-index:9999;display:flex;flex-direction:column;gap:.5rem;pointer-events:none;max-width:100vw}
-      .flash-toast{background:#111;color:#fff;padding:.75rem 1rem;border-radius:.5rem;
-        font:14px/1.4 system-ui,-apple-system,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.2);
-        animation:flash-in .2s ease;pointer-events:auto;max-width:320px;word-break:break-word}
-      .flash-toast.success{background:#0a7a3b}
-      .flash-toast.error{background:#b00020}
-      .flash-toast.warn,.flash-toast.warning{background:#a35c00}
-      .flash-toast.info{background:#0b5fff}
-      @keyframes flash-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
-      .flash-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;
-        align-items:center;justify-content:center;z-index:10000;animation:flash-fade .15s ease;padding:1rem}
-      .flash-modal{background:#fff;color:#111;border-radius:.75rem;padding:1.25rem 1.5rem;
-        min-width:280px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.3);
-        font:14px/1.5 system-ui,-apple-system,sans-serif}
-      .flash-modal h3{margin:0 0 .5rem;font-size:1rem;font-weight:600}
-      .flash-modal p{margin:0 0 1rem;color:#444;white-space:pre-wrap}
-      .flash-modal-actions{display:flex;gap:.5rem;justify-content:flex-end;flex-wrap:wrap}
-      .flash-btn{border:0;border-radius:.4rem;padding:.5rem .9rem;font:inherit;cursor:pointer;transition:opacity .15s}
-      .flash-btn:hover{opacity:.9}
-      .flash-btn:active{opacity:.8}
-      .flash-btn.primary{background:#111;color:#fff}
-      .flash-btn.ghost{background:#eee;color:#111}
-      .flash-loading{position:fixed;inset:0;background:rgba(255,255,255,.7);
-        display:flex;align-items:center;justify-content:center;z-index:10001;backdrop-filter:blur(2px)}
-      .flash-spinner{width:36px;height:36px;border:3px solid #ddd;border-top-color:#111;
-        border-radius:50%;animation:flash-spin .8s linear infinite}
-      @keyframes flash-fade{from{opacity:0}to{opacity:1}}
-      @keyframes flash-spin{to{transform:rotate(360deg)}}
-      [data-theme="dark"] .flash-modal{background:#1c1c1e;color:#f2f2f7}
-      [data-theme="dark"] .flash-modal p{color:#a1a1aa}
-      [data-theme="dark"] .flash-btn.ghost{background:#2c2c2e;color:#f2f2f7}
-      [data-theme="dark"] .flash-loading{background:rgba(0,0,0,.6)}
-      [data-theme="dark"] .flash-spinner{border-color:#333;border-top-color:#fff}
-    `;
+    .flash-toast-container{position:fixed;top:1rem;right:1rem;z-index:9999;display:flex;flex-direction:column;gap:.5rem;pointer-events:none;max-width:100vw}
+    .flash-toast{background:#111;color:#fff;padding:.75rem 1rem;border-radius:.5rem;
+      font:14px/1.4 system-ui,-apple-system,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.2);
+      animation:flash-in .2s ease;pointer-events:auto;max-width:320px;word-break:break-word}
+    .flash-toast.success{background:#0a7a3b}
+    .flash-toast.error{background:#b00020}
+    .flash-toast.warn,.flash-toast.warning{background:#a35c00}
+    .flash-toast.info{background:#0b5fff}
+    @keyframes flash-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+    .flash-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;
+      align-items:center;justify-content:center;z-index:10000;animation:flash-fade .15s ease;padding:1rem}
+    .flash-modal{background:#fff;color:#111;border-radius:.75rem;padding:1.25rem 1.5rem;
+      min-width:280px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.3);
+      font:14px/1.5 system-ui,-apple-system,sans-serif}
+    .flash-modal h3{margin:0 0 .5rem;font-size:1rem;font-weight:600}
+    .flash-modal p{margin:0 0 1rem;color:#444;white-space:pre-wrap}
+    .flash-modal-actions{display:flex;gap:.5rem;justify-content:flex-end;flex-wrap:wrap}
+    .flash-btn{border:0;border-radius:.4rem;padding:.5rem .9rem;font:inherit;cursor:pointer;transition:opacity .15s}
+    .flash-btn:hover{opacity:.9}
+    .flash-btn.primary{background:#111;color:#fff}
+    .flash-btn.ghost{background:#eee;color:#111}
+    .flash-loading{position:fixed;inset:0;background:rgba(255,255,255,.7);
+      display:flex;align-items:center;justify-content:center;z-index:10001;backdrop-filter:blur(2px)}
+    .flash-spinner{width:36px;height:36px;border:3px solid #ddd;border-top-color:#111;
+      border-radius:50%;animation:flash-spin .8s linear infinite}
+    @keyframes flash-fade{from{opacity:0}to{opacity:1}}
+    @keyframes flash-spin{to{transform:rotate(360deg)}}
+    [data-theme="dark"] .flash-modal{background:#1c1c1e;color:#f2f2f7}
+    [data-theme="dark"] .flash-loading{background:rgba(0,0,0,.6)}
+  `;
     document.head.appendChild(style);
   }
+
+  function ensureStyles() { injectStyles(); }
 
   function toast(message, options = {}) {
     injectStyles();
@@ -669,16 +515,16 @@
   }
 
   function modal({ title, message, actions, closeOnBackdrop = true }) {
-    injectStyles();
+    ensureStyles();
     return new Promise((resolve) => {
       const backdrop = document.createElement("div");
       backdrop.className = "flash-modal-backdrop";
       backdrop.innerHTML = `
-        <div class="flash-modal" role="dialog" aria-modal="true">
-          ${title ? "<h3></h3>" : ""}
-          ${message ? "<p></p>" : ""}
-          <div class="flash-modal-actions"></div>
-        </div>`;
+      <div class="flash-modal" role="dialog" aria-modal="true">
+        ${title ? "<h3></h3>" : ""}
+        ${message ? "<p></p>" : ""}
+        <div class="flash-modal-actions"></div>
+      </div>`;
       const modalEl = backdrop.firstElementChild;
       if (title) modalEl.querySelector("h3").textContent = title;
       if (message) modalEl.querySelector("p").textContent = message;
@@ -718,8 +564,9 @@
 
   let loadingEl = null;
   let loadingCount = 0;
+
   function loading(show = true) {
-    injectStyles();
+    ensureStyles();
     if (show) {
       loadingCount++;
       if (loadingEl) return;
@@ -737,33 +584,132 @@
     }
   }
 
-  /* ----------------------- Attach static API ----------------------- */
-  F.http     = http;
-  F.storage  = storage;
-  F.copy     = copy;
+  async function copy(text) {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); } catch {}
+      ta.remove();
+    }
+    return true;
+  }
+
+  function download(filename, data, mime = "text/plain") {
+    const blob = data instanceof Blob ? data : new Blob([data], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function theme(mode) {
+    if (!mode) return document.documentElement.dataset.theme || localStorage.getItem("flash:theme")?.replace(/"/g,"") || "light";
+    document.documentElement.dataset.theme = mode;
+    try { localStorage.setItem("flash:theme", JSON.stringify(mode)); } catch {}
+    document.dispatchEvent(new CustomEvent("flash:theme", { detail: mode }));
+    return mode;
+  }
+  // auto-restore
+  try {
+    const saved = JSON.parse(localStorage.getItem("flash:theme") || "null");
+    if (saved) document.documentElement.dataset.theme = saved;
+  } catch {}
+
+  // Observers are Collection methods, but expose standalone helpers for tree-shaking
+  function observe(target, callback, options = {}) {
+    const el = target instanceof Element ? target : document.querySelector(target);
+    if (!el) return null;
+    const obs = new MutationObserver(callback);
+    obs.observe(el, { childList: true, subtree: true, attributes: true, ...options });
+    return obs;
+  }
+
+  function visible(target, callback, options = {}) {
+    const el = target instanceof Element ? target : document.querySelector(target);
+    if (!el) return null;
+    const obs = new IntersectionObserver((entries) => entries.forEach(e => callback(e.isIntersecting, e)), options);
+    obs.observe(el);
+    return obs;
+  }
+
+  function resize(target, callback, options = {}) {
+    const el = target instanceof Element ? target : document.querySelector(target);
+    if (!el) return null;
+    const obs = new ResizeObserver((entries) => entries.forEach(e => callback(e.contentRect, e)), options);
+    obs.observe(el, options);
+    return obs;
+  }
+
+  // Animation helpers — also available as Collection.animate/fadeIn/fadeOut
+  async function animate(elements, keyframes, options = {}) {
+    const els = Array.isArray(elements) ? elements : [elements];
+    const kf = Array.isArray(keyframes) ? keyframes : [keyframes];
+    const opts = typeof options === "number" ? { duration: options } : options;
+    const anims = els.map(el => {
+      if (el.animate) return el.animate(kf, { duration: 300, easing: "ease", fill: "forwards", ...opts });
+      Object.assign(el.style, kf[kf.length-1] || {});
+      return { finished: Promise.resolve() };
+    });
+    await Promise.all(anims.map(a => a.finished.catch(()=>{})));
+    return els;
+  }
+
+  async function fadeIn(el, duration = 300) {
+    if (!el) return;
+    el.style.display = "";
+    return animate(el, [{opacity:0},{opacity:1}], { duration });
+  }
+  async function fadeOut(el, duration = 300) {
+    if (!el) return;
+    await animate(el, [{opacity:1},{opacity:0}], { duration });
+    el.style.display = "none";
+  }
+
+  F.http = http;
+  F.storage = storage;
+  F.toast = toast;
+  F.modal = modal;
+  F.alert = alertBox;
+  F.confirm = confirmBox;
+  F.loading = loading;
+  F.copy = copy;
   F.download = download;
-  F.theme    = theme;
-  F.toast    = toast;
-  F.modal    = modal;
-  F.alert    = alertBox;
-  F.confirm  = confirmBox;
-  F.loading  = loading;
-  F.F        = F;
-  F.Flash    = F;
+  F.theme = theme;
 
-  // jQuery compat alias — $.fn style not needed, but expose Flash global
   const Flash = F;
-  Flash.version = VERSION;
-  Flash.toast = toast;
-  Flash.modal = modal;
-  Flash.alert = alertBox;
-  Flash.confirm = confirmBox;
-  Flash.loading = loading;
-  Flash.http = http;
-  Flash.storage = storage;
-  Flash.copy = copy;
-  Flash.download = download;
-  Flash.theme = theme;
 
-  return Flash;
-});
+  exports.Collection = Collection;
+  exports.F = F;
+  exports.Flash = Flash;
+  exports.VERSION = VERSION;
+  exports.alert = alertBox;
+  exports.animate = animate;
+  exports.confirm = confirmBox;
+  exports.copy = copy;
+  exports.default = F;
+  exports.download = download;
+  exports.fadeIn = fadeIn;
+  exports.fadeOut = fadeOut;
+  exports.http = http;
+  exports.loading = loading;
+  exports.modal = modal;
+  exports.observe = observe;
+  exports.resize = resize;
+  exports.storage = storage;
+  exports.theme = theme;
+  exports.toast = toast;
+  exports.visible = visible;
+
+  Object.defineProperty(exports, '__esModule', { value: true });
+
+}));

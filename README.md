@@ -3,11 +3,11 @@
 > **Fast Lightweight UI / HTML System** — familiar jQuery DX, modern Web APIs, zero dependencies, tree-shakable.
 
 ```
-npm install flash.js
+npm install @flash-js/flash.js
 ```
 
 ```js
-import { F } from "flash.js";
+import { F } from "@flash-js/flash.js";
 
 F(".card").addClass("active").on("click", () => F.toast("FLASH!"));
 const user = await F.http.json("/api/user/42");
@@ -15,7 +15,7 @@ const user = await F.http.json("/api/user/42");
 
 CDN:
 ```html
-<script src="https://unpkg.com/flash.js/dist/flash.min.js"></script>
+<script src="https://unpkg.com/@flash-js/flash.js/dist/flash.min.js"></script>
 <script>
   F(".button").on("click", () => F.toast("Kaydedildi!", "success"));
 </script>
@@ -84,8 +84,8 @@ F.loading(true); await doWork(); F.loading(false);
 
 Subpath (tree-shaking dostu):
 ```js
-import { http } from "flash.js/http";
-import { toast } from "flash.js/ui";
+import { http } from "@flash-js/flash.js/http";
+import { toast } from "@flash-js/flash.js/ui";
 ```
 
 ## Kaynak

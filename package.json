@@ -1,5 +1,5 @@
 {
-  "name": "flash.js",
+  "name": "@flash-js/flash.js",
   "version": "1.0.0",
   "description": "jQuery, reimagined for the modern web. Zero-dependency, tree-shakable DOM & Web API library.",
   "type": "module",

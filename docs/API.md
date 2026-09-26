@@ -129,10 +129,10 @@ CSS otomatik inject edilir (`#flash-styles`), dark theme ` [data-theme="dark"]` 
 ## ESM / Tree-shaking
 
 ```js
-import { F } from "flash.js"          // ana giriş
-import { http } from "flash.js/http"  // sadece http bundle'a girer
-import { toast } from "flash.js/ui"
-import { storage } from "flash.js/storage"
+import { F } from "@flash-js/flash.js"          // ana giriş
+import { http } from "@flash-js/flash.js/http"  // sadece http bundle'a girer
+import { toast } from "@flash-js/flash.js/ui"
+import { storage } from "@flash-js/flash.js/storage"
 ```
 
 `package.json` → `"sideEffects": false`, `exports` subpath'leri, Rollup/Vite/esbuild tree-shaking ile kullanılmayan modüller çıkarılır.
