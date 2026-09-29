@@ -1,6 +1,6 @@
 {
   "name": "@flash-js/flash.js",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "jQuery, reimagined for the modern web. Zero-dependency, tree-shakable DOM & Web API library.",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -32,7 +32,7 @@
     "lint": "eslint src --ext .js",
     "prepublishOnly": "npm run build"
   },
-  "keywords": ["dom", "jquery", "vanilla", "tree-shakable", "esm", "web-api", "flash", "ui", "toast", "fetch"],
+  "keywords": ["dom", "jquery", "jquery-alternative", "vanilla", "tree-shakable", "esm", "web-api", "flash", "ui", "toast", "fetch", "javascript", "frontend", "library"],
   "author": "CRTY DEV",
   "license": "MIT",
   "repository": {

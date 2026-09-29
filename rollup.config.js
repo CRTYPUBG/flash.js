@@ -30,25 +30,27 @@ const cjsBuild = {
   },
 };
 
-// UMD / IIFE for CDN — uses root flash.js source via src/index fallback but provide global F/Flash
+// UMD for CDN — src/umd.js assigns the F function itself to the
+// `Flash` and `F` globals (same shape as root flash.js), so
+// `Flash.version`, `F.toast(...)` etc. work from a plain <script> tag.
 const umdBuild = {
-  input: "src/index.js",
+  input: "src/umd.js",
   output: {
     file: "dist/flash.min.js",
     format: "umd",
     name: "Flash",
-    exports: "named",
+    exports: "default",
   },
   plugins: [terser()],
 };
 
 const umdUnminified = {
-  input: "src/index.js",
+  input: "src/umd.js",
   output: {
     file: "dist/flash.js",
     format: "umd",
     name: "Flash",
-    exports: "named",
+    exports: "default",
   },
 };
 

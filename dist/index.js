@@ -324,7 +324,7 @@ class Collection {
   }
 }
 
-const VERSION = "1.0.0";
+const VERSION = "1.0.1";
 
 function F(target) {
   if (target instanceof Collection) return target;

@@ -1,7 +1,7 @@
 import { Collection } from "./collection.js";
 import { isElement, isString, isObject, isFunction, unique, toArray } from "./utils.js";
 
-export const VERSION = "1.0.0";
+export const VERSION = "1.0.1";
 
 export function F(target) {
   if (target instanceof Collection) return target;

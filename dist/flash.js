@@ -1,8 +1,8 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
-  typeof define === 'function' && define.amd ? define(['exports'], factory) :
-  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.Flash = {}));
-})(this, (function (exports) { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+  typeof define === 'function' && define.amd ? define(factory) :
+  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.Flash = factory());
+})(this, (function () { 'use strict';
 
   const isElement    = (v) => typeof Element !== "undefined" && v instanceof Element;
   const isString     = (v) => typeof v === "string";
@@ -330,7 +330,7 @@
     }
   }
 
-  const VERSION = "1.0.0";
+  const VERSION = "1.0.1";
 
   function F(target) {
     if (target instanceof Collection) return target;
@@ -625,56 +625,6 @@
     if (saved) document.documentElement.dataset.theme = saved;
   } catch {}
 
-  // Observers are Collection methods, but expose standalone helpers for tree-shaking
-  function observe(target, callback, options = {}) {
-    const el = target instanceof Element ? target : document.querySelector(target);
-    if (!el) return null;
-    const obs = new MutationObserver(callback);
-    obs.observe(el, { childList: true, subtree: true, attributes: true, ...options });
-    return obs;
-  }
-
-  function visible(target, callback, options = {}) {
-    const el = target instanceof Element ? target : document.querySelector(target);
-    if (!el) return null;
-    const obs = new IntersectionObserver((entries) => entries.forEach(e => callback(e.isIntersecting, e)), options);
-    obs.observe(el);
-    return obs;
-  }
-
-  function resize(target, callback, options = {}) {
-    const el = target instanceof Element ? target : document.querySelector(target);
-    if (!el) return null;
-    const obs = new ResizeObserver((entries) => entries.forEach(e => callback(e.contentRect, e)), options);
-    obs.observe(el, options);
-    return obs;
-  }
-
-  // Animation helpers — also available as Collection.animate/fadeIn/fadeOut
-  async function animate(elements, keyframes, options = {}) {
-    const els = Array.isArray(elements) ? elements : [elements];
-    const kf = Array.isArray(keyframes) ? keyframes : [keyframes];
-    const opts = typeof options === "number" ? { duration: options } : options;
-    const anims = els.map(el => {
-      if (el.animate) return el.animate(kf, { duration: 300, easing: "ease", fill: "forwards", ...opts });
-      Object.assign(el.style, kf[kf.length-1] || {});
-      return { finished: Promise.resolve() };
-    });
-    await Promise.all(anims.map(a => a.finished.catch(()=>{})));
-    return els;
-  }
-
-  async function fadeIn(el, duration = 300) {
-    if (!el) return;
-    el.style.display = "";
-    return animate(el, [{opacity:0},{opacity:1}], { duration });
-  }
-  async function fadeOut(el, duration = 300) {
-    if (!el) return;
-    await animate(el, [{opacity:1},{opacity:0}], { duration });
-    el.style.display = "none";
-  }
-
   F.http = http;
   F.storage = storage;
   F.toast = toast;
@@ -686,30 +636,13 @@
   F.download = download;
   F.theme = theme;
 
-  const Flash = F;
+  // UMD/CDN entry — mirrors root flash.js behavior:
+  // exposes the F function itself as `Flash` and `F` globals (with .version etc.).
+  // Importing ./index.js attaches http/storage/ui/... helpers onto F first.
 
-  exports.Collection = Collection;
-  exports.F = F;
-  exports.Flash = Flash;
-  exports.VERSION = VERSION;
-  exports.alert = alertBox;
-  exports.animate = animate;
-  exports.confirm = confirmBox;
-  exports.copy = copy;
-  exports.default = F;
-  exports.download = download;
-  exports.fadeIn = fadeIn;
-  exports.fadeOut = fadeOut;
-  exports.http = http;
-  exports.loading = loading;
-  exports.modal = modal;
-  exports.observe = observe;
-  exports.resize = resize;
-  exports.storage = storage;
-  exports.theme = theme;
-  exports.toast = toast;
-  exports.visible = visible;
+  globalThis.Flash = F;
+  globalThis.F = F;
 
-  Object.defineProperty(exports, '__esModule', { value: true });
+  return F;
 
 }));

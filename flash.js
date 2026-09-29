@@ -1,5 +1,5 @@
 /*!
- * FLASH.js v1.0.0
+ * FLASH.js v1.0.1
  * jQuery, reimagined for the modern web.
  * Fast Lightweight UI / HTML System — zero dependencies, ESM-first, tree-shakable
  * MIT License · https://github.com/CRTYPUBG/flash.js
@@ -16,7 +16,7 @@
 })(typeof window !== "undefined" ? window : globalThis, function () {
   "use strict";
 
-  const VERSION = "1.0.0";
+  const VERSION = "1.0.1";
 
   /* ----------------------------- Utils ----------------------------- */
   const isElement    = (v) => typeof Element !== "undefined" && v instanceof Element;

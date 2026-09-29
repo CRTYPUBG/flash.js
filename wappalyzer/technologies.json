@@ -1,0 +1,17 @@
+{
+  "_comment": "DRAFT for submission to github.com/wappalyzer/wappalyzer. Insert this object into src/technologies/f.json (alphabetical position) and add the icon as src/drivers/webextension/images/icons/FLASH.js.svg. Verify current repo paths in their CONTRIBUTING guide before opening the PR.",
+  "FLASH.js": {
+    "cats": [
+      59
+    ],
+    "description": "FLASH.js is a lightweight, zero-dependency JavaScript library with a familiar chainable API (F) built on modern Web APIs. ESM-first and tree-shakable.",
+    "icon": "FLASH.js.svg",
+    "js": {
+      "Flash.version": "\\d+\\.\\d+\\.\\d+"
+    },
+    "script": [
+      "(?:unpkg\\.com|cdn\\.jsdelivr\\.net/npm)/@flash-js/flash\\.js"
+    ],
+    "website": "https://flash.crty-dev.com"
+  }
+}
